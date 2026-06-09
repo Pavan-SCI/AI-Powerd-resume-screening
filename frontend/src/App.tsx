@@ -6,6 +6,7 @@ import { JobMatcher } from './components/JobMatcher';
 import { Settings } from './components/Settings';
 import { Profile } from './components/Profile';
 import { Auth } from './components/Auth';
+import { Menu } from 'lucide-react';
 
 interface CurrentUser {
   username: string;
@@ -20,6 +21,9 @@ function App() {
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [userScanCount, setUserScanCount] = useState<number>(0);
   const [userAvgScore, setUserAvgScore] = useState<number>(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : true
+  );
 
   // Restore session if user was previously logged in
   useEffect(() => {
@@ -175,7 +179,7 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isSidebarOpen ? 'sidebar-open-layout' : 'sidebar-closed-layout'}`}>
       {/* Decorative Glow Overlays */}
       <div style={{
         position: 'fixed',
@@ -200,6 +204,24 @@ function App() {
         zIndex: 0
       }}></div>
 
+      {/* Floating Toggle Menu Button - visible on all screens when sidebar is closed */}
+      {!isSidebarOpen && (
+        <button 
+          className="sidebar-toggle-floating" 
+          onClick={() => setIsSidebarOpen(true)}
+          aria-label="Open navigation menu"
+          title="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+      )}
+
+      {/* Backdrop overlay for mobile/tablet sidebar */}
+      <div 
+        className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -207,6 +229,9 @@ function App() {
         totalAnalyzed={userScanCount}
         currentUser={currentUser}
         onLogout={handleLogout}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
       <main className="main-content" style={{ zIndex: 1 }}>

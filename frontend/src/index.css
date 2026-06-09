@@ -81,6 +81,63 @@ body {
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.05), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.05), transparent 45%);
+  overflow-x: hidden;
+}
+
+/* Sidebar styling & transition classes */
+.app-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  border-radius: 0 1.25rem 1.25rem 0;
+  border-left: none;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 2rem 1.5rem;
+  background-color: #0c0916;
+  border-right: 1px solid var(--border-color);
+  z-index: 100;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* -- DESKTOP (≥1025px): sidebar always visible, toggles between 280px and 72px -- */
+@media (min-width: 1025px) {
+  .app-sidebar {
+    transform: translateX(0); /* always visible on desktop */
+  }
+
+  .app-sidebar.sidebar-open {
+    width: 280px;
+    padding: 2rem 1.5rem;
+  }
+
+  .app-sidebar.sidebar-collapsed {
+    width: 72px;
+    padding: 1.5rem 0.75rem;
+    border-radius: 0 1rem 1rem 0;
+  }
+}
+
+/* -- MOBILE/TABLET (<1024px): sidebar slides in/out as a drawer -- */
+@media (max-width: 1024px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar.sidebar-collapsed {
+    transform: translateX(-100%);
+  }
 }
 
 .main-content {
@@ -91,6 +148,184 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s ease;
+}
+
+/* Layout adjustments on Desktop when sidebar is expanded or collapsed */
+@media (min-width: 1025px) {
+  .app-container.sidebar-open-layout .main-content {
+    margin-left: 280px;
+  }
+
+  .app-container.sidebar-closed-layout .main-content {
+    margin-left: 72px;
+  }
+}
+
+/* Sidebar toggle float button — only visible on mobile/tablet when sidebar is closed */
+.sidebar-toggle-floating {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(21, 17, 40, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: none; /* hidden by default */
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Only show floating button on mobile/tablet */
+@media (max-width: 1024px) {
+  .sidebar-toggle-floating {
+    display: flex;
+    top: 1.25rem;
+    left: 1.25rem;
+  }
+}
+
+.sidebar-toggle-floating:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary);
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Sidebar nav button hover effect */
+.sidebar-btn:hover {
+  background: rgba(139, 92, 246, 0.06) !important;
+}
+
+/* Tooltip for collapsed icon-only nav items */
+.sidebar-btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(21, 17, 40, 0.95);
+  backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  pointer-events: none;
+  animation: tooltip-fade 0.15s ease;
+}
+
+@keyframes tooltip-fade {
+  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 95;
+  transition: opacity 0.3s ease;
+}
+
+/* Overlay only shows on mobile/tablet */
+@media (max-width: 1024px) {
+  .sidebar-overlay.visible {
+    display: block;
+  }
+}
+
+/* Tablet & Mobile Screens */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 2rem 1.25rem;
+    padding-top: 5.5rem; /* Ensure floating button doesn't overlap text content */
+    height: 100vh;
+  }
+}
+
+/* Settings Page Styling & Responsiveness */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+.settings-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .settings-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .settings-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-info-card {
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.settings-flex-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .settings-flex-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .settings-flex-wrap button {
+    width: 100%;
+  }
 }
 
 /* Glassmorphism Panel base */
@@ -715,4 +950,10 @@ h1 {
   line-height: 1.6;
   margin-bottom: 1.75rem;
   flex-grow: 1;
+}
+
+@media (max-width: 1024px) {
+  .mobile-only-close {
+    display: flex !important;
+  }
 }
