@@ -104,7 +104,7 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
       const token = session?.access_token;
       
       const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/match-resume`, {
+      const response = await fetch(`${backendUrl}/api/match-job`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
