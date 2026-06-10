@@ -8,6 +8,8 @@ import { Profile } from './components/Profile';
 import { Auth } from './components/Auth';
 import { Menu } from 'lucide-react';
 
+import { supabase } from './utils/supabaseClient';
+
 interface CurrentUser {
   username: string;
   isAdmin: boolean;
@@ -16,102 +18,95 @@ interface CurrentUser {
 function App() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [apiKey, setApiKey] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [userScanCount, setUserScanCount] = useState<number>(0);
   const [userAvgScore, setUserAvgScore] = useState<number>(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(
     typeof window !== 'undefined' ? window.innerWidth > 1024 : true
   );
 
-  // Restore session if user was previously logged in
   useEffect(() => {
-    const savedUser = sessionStorage.getItem('current_user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser) as CurrentUser;
-        setCurrentUser(parsed);
-        loadUserStats(parsed.username);
-      } catch {
-        sessionStorage.removeItem('current_user');
+    // Check initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        await fetchUserProfile(session.user.id, session.user.email);
+        loadUserStats(session.access_token);
       }
-    }
+    });
 
-    // Load admin-configured system settings from localStorage
-    const savedKey = localStorage.getItem('gemini_api_key') || '';
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        await fetchUserProfile(session.user.id, session.user.email);
+        loadUserStats(session.access_token);
+      } else {
+        setCurrentUser(null);
+        setUserScanCount(0);
+        setUserAvgScore(0);
+      }
+    });
+
     const savedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
-    const savedDemo = localStorage.getItem('gemini_demo_mode');
 
-    setApiKey(savedKey);
     setSelectedModel(savedModel);
-    setIsDemoMode(savedDemo === null ? true : savedDemo === 'true');
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserStats = (username: string) => {
-    const historyKey = `user_history_${username.toLowerCase()}`;
-    const historyStr = localStorage.getItem(historyKey) || '[]';
+  const fetchUserProfile = async (userId: string, email?: string) => {
     try {
-      const history = JSON.parse(historyStr);
-      setUserScanCount(history.length);
-      if (history.length > 0) {
-        const avg = Math.round(history.reduce((sum: number, item: any) => sum + item.score, 0) / history.length);
-        setUserAvgScore(avg);
-      } else {
-        setUserAvgScore(0);
+      const { data } = await supabase.from('profiles').select('username').eq('id', userId).single();
+      const isAdmin = email?.toLowerCase() === 'admin@resumecraft.local';
+      setCurrentUser({ username: data?.username || email?.split('@')[0] || 'User', isAdmin });
+    } catch {
+      setCurrentUser({ username: email?.split('@')[0] || 'User', isAdmin: false });
+    }
+  };
+
+  const loadUserStats = async (token: string) => {
+    try {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const history = await response.json();
+        setUserScanCount(history.length);
+        if (history.length > 0) {
+          const avg = Math.round(history.reduce((sum: number, item: any) => sum + item.score, 0) / history.length);
+          setUserAvgScore(avg);
+        } else {
+          setUserAvgScore(0);
+        }
       }
     } catch {
       setUserScanCount(0);
+      setUserAvgScore(0);
     }
   };
 
-  const handleLoginSuccess = (username: string, isAdmin: boolean) => {
-    const user: CurrentUser = { username, isAdmin };
-    setCurrentUser(user);
-    sessionStorage.setItem('current_user', JSON.stringify(user));
-    loadUserStats(username);
-    setActiveTab('dashboard');
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
-    sessionStorage.removeItem('current_user');
     setActiveTab('dashboard');
-    setUserScanCount(0);
-    setUserAvgScore(0);
   };
 
-  const updateApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('gemini_api_key', key);
-  };
 
   const updateSelectedModel = (model: string) => {
     setSelectedModel(model);
     localStorage.setItem('gemini_model', model);
   };
 
-  const updateDemoMode = (demo: boolean) => {
-    setIsDemoMode(demo);
-    localStorage.setItem('gemini_demo_mode', String(demo));
-  };
-
-  const handleAnalysisSuccess = (_score: number) => {
+  const handleAnalysisSuccess = async (_score: number) => {
     if (!currentUser) return;
-
-    // Reload stats from storage after saving (Screener/Matcher save to localStorage first)
-    setTimeout(() => {
-      if (currentUser) loadUserStats(currentUser.username);
-    }, 100);
-
-    // Also track global total for admin dashboard
-    const nextGlobal = parseInt(localStorage.getItem('global_scanned_count') || '0', 10) + 1;
-    localStorage.setItem('global_scanned_count', String(nextGlobal));
+    const session = (await supabase.auth.getSession()).data.session;
+    if (session) {
+      setTimeout(() => loadUserStats(session.access_token), 500);
+    }
   };
 
-  // Show Auth screen if not logged in
   if (!currentUser) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
+    return <Auth />;
   }
 
   const renderActiveView = () => {
@@ -128,23 +123,15 @@ function App() {
       case 'screener':
         return (
           <Screener
-            apiKey={apiKey}
             selectedModel={selectedModel}
-            isDemoMode={isDemoMode}
             onAnalysisSuccess={handleAnalysisSuccess}
-            setActiveTab={setActiveTab}
-            currentUser={currentUser}
           />
         );
       case 'matcher':
         return (
           <JobMatcher
-            apiKey={apiKey}
             selectedModel={selectedModel}
-            isDemoMode={isDemoMode}
             onAnalysisSuccess={handleAnalysisSuccess}
-            setActiveTab={setActiveTab}
-            currentUser={currentUser}
           />
         );
       case 'profile':
@@ -157,12 +144,8 @@ function App() {
       case 'settings':
         return (
           <Settings
-            apiKey={apiKey}
-            setApiKey={updateApiKey}
             selectedModel={selectedModel}
             setSelectedModel={updateSelectedModel}
-            isDemoMode={isDemoMode}
-            setIsDemoMode={updateDemoMode}
             currentUser={currentUser}
           />
         );
@@ -225,7 +208,6 @@ function App() {
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        isDemoMode={isDemoMode}
         totalAnalyzed={userScanCount}
         currentUser={currentUser}
         onLogout={handleLogout}

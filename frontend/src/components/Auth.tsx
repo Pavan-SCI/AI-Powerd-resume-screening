@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Eye, EyeOff, User, Lock, UserPlus, LogIn } from 'lucide-react';
+import { supabase } from '../utils/supabaseClient';
 
-interface AuthProps {
-  onLoginSuccess: (username: string, isAdmin: boolean) => void;
-}
-
-export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
+export const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,77 +10,90 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
     if (!username.trim() || !password.trim()) {
-      setError('Username and password are required.');
+      setError('Username/Email and password are required.');
       return;
     }
 
-    if (isLogin) {
-      // Hardcoded Admin Check
-      if (username.toLowerCase() === 'admin' && password === 'admin') {
-        onLoginSuccess('Admin', true);
-        return;
-      }
+    setLoading(true);
 
-      // Standard User Login Check
-      const usersListStr = localStorage.getItem('registered_users') || '[]';
-      const usersList = JSON.parse(usersListStr);
-      const user = usersList.find(
-        (u: any) => u.username.toLowerCase() === username.toLowerCase().trim()
-      );
+    try {
+      if (isLogin) {
+        const email = username.includes('@') ? username : `${username.toLowerCase().trim()}@resumecraft.local`;
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (user && user.password === password) {
-        onLoginSuccess(user.username, false);
+        if (authError) {
+          setError(authError.message);
+          setLoading(false);
+          return;
+        }
       } else {
-        setError('Invalid username or password.');
+        // Signup logic
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters long.');
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError('Passwords do not match.');
+          setLoading(false);
+          return;
+        }
+
+        if (username.toLowerCase().trim() === 'admin') {
+          setError('The username "admin" is reserved.');
+          setLoading(false);
+          return;
+        }
+
+        const email = username.includes('@') ? username : `${username.toLowerCase().trim()}@resumecraft.local`;
+        
+        // Register in Supabase
+        const { data, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (authError) {
+          setError(authError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (data && data.user) {
+          // Save profile username mapping
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({ id: data.user.id, username: username.trim() });
+
+          if (profileError) {
+            console.error('Error saving profile:', profileError);
+          }
+
+          // If auth provider confirms instantly:
+          if (!data.session) {
+            setSuccessMessage('Registration successful! Please check your email or log in.');
+            setIsLogin(true);
+            setPassword('');
+            setConfirmPassword('');
+          }
+        }
       }
-    } else {
-      // Signup logic
-      if (password.length < 4) {
-        setError('Password must be at least 4 characters long.');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.');
-        return;
-      }
-
-      if (username.toLowerCase().trim() === 'admin') {
-        setError('The username "admin" is reserved.');
-        return;
-      }
-
-      const usersListStr = localStorage.getItem('registered_users') || '[]';
-      const usersList = JSON.parse(usersListStr);
-      const userExists = usersList.some(
-        (u: any) => u.username.toLowerCase() === username.toLowerCase().trim()
-      );
-
-      if (userExists) {
-        setError('Username is already taken.');
-        return;
-      }
-
-      // Add user to database
-      const newUser = {
-        username: username.trim(),
-        password: password,
-        registeredAt: new Date().toISOString()
-      };
-      usersList.push(newUser);
-      localStorage.setItem('registered_users', JSON.stringify(usersList));
-
-      setSuccessMessage('Registration successful! Please login.');
-      setIsLogin(true);
-      setPassword('');
-      setConfirmPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An authentication error occurred.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -304,8 +314,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess }) => {
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-            {isLogin ? (
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
+            {loading ? (
+              <span>Processing...</span>
+            ) : isLogin ? (
               <>
                 <LogIn size={18} /> Log In
               </>

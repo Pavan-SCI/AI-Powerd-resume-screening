@@ -1,26 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, AlertCircle, RefreshCw, BookOpen, AlertTriangle, ChevronDown, CheckCircle2, HelpCircle } from 'lucide-react';
 import { extractTextFromPdf } from '../utils/pdfParser';
-import { screenResume } from '../utils/geminiApi';
 import type { ScreeningResult } from '../utils/geminiApi';
 import { LoadingScreen } from './LoadingScreen';
+import { supabase } from '../utils/supabaseClient';
 
 interface ScreenerProps {
-  apiKey: string;
   selectedModel: string;
-  isDemoMode: boolean;
   onAnalysisSuccess: (score: number) => void;
-  setActiveTab: (tab: string) => void;
-  currentUser: { username: string; isAdmin: boolean } | null;
 }
 
 export const Screener: React.FC<ScreenerProps> = ({
-  apiKey,
   selectedModel,
-  isDemoMode,
-  onAnalysisSuccess,
-  setActiveTab,
-  currentUser
+  onAnalysisSuccess
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -88,39 +80,41 @@ export const Screener: React.FC<ScreenerProps> = ({
     setError(null);
     setResult(null);
 
-    // Safety checks
-    if (!isDemoMode && !apiKey) {
-      setError("Gemini API Key is missing. Please add your key in Settings or activate Demo Mode to test.");
-      return;
-    }
-
     setIsLoading(true);
     
     try {
       setLoadingStatus("Reading and parsing PDF...");
       const text = await extractTextFromPdf(fileToProcess);
       
-      setLoadingStatus("Consulting ResumeCraft AI engine...");
-      const screeningResult = await screenResume(text, apiKey, selectedModel, isDemoMode);
+      let screeningResult: ScreeningResult;
+      
+      setLoadingStatus("Consulting backend API...");
+      const session = (await supabase.auth.getSession()).data.session;
+      const token = session?.access_token;
+      
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/screen-resume`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          resume_text: text,
+          filename: fileToProcess.name,
+          model: selectedModel
+        })
+      });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData?.detail || `API error: ${response.statusText}`);
+        }
+        
+        screeningResult = await response.json();
       
       setResult(screeningResult);
       onAnalysisSuccess(screeningResult.overall_score);
-
-      // Save to user's personal history in localStorage
-      if (currentUser) {
-        const historyKey = `user_history_${currentUser.username.toLowerCase()}`;
-        const existingStr = localStorage.getItem(historyKey) || '[]';
-        const existing = JSON.parse(existingStr);
-        existing.push({
-          id: `${Date.now()}`,
-          filename: fileToProcess.name,
-          date: new Date().toISOString(),
-          score: screeningResult.overall_score,
-          type: 'screen',
-          result: screeningResult
-        });
-        localStorage.setItem(historyKey, JSON.stringify(existing));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred during screening.");
       setFile(null);
@@ -176,32 +170,6 @@ export const Screener: React.FC<ScreenerProps> = ({
         )}
       </div>
 
-      {/* API Key warning */}
-      {!apiKey && !isDemoMode && (
-        <div className="glass-panel" style={{
-          padding: '1.25rem',
-          borderLeft: '4px solid var(--danger)',
-          background: 'rgba(239, 68, 68, 0.03)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '1rem',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <AlertCircle size={22} style={{ color: 'var(--danger)' }} />
-            <div>
-              <h4 style={{ margin: 0 }}>API Key Required</h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Please enter a Gemini API Key to screen resumes, or enable Demo Mode in settings.
-              </p>
-            </div>
-          </div>
-          <button className="btn btn-secondary" onClick={() => setActiveTab('settings')} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-            Go to Settings
-          </button>
-        </div>
-      )}
 
       {/* Error state */}
       {error && (
