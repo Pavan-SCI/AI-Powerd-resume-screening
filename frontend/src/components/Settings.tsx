@@ -1,41 +1,28 @@
 import React, { useState } from 'react';
-import { Key, ShieldAlert, Check, HelpCircle, Eye, EyeOff, AlertTriangle, User, Shield } from 'lucide-react';
+import { Key, ShieldAlert, Check, HelpCircle, User, Shield } from 'lucide-react';
 
 interface SettingsProps {
-  apiKey: string;
-  setApiKey: (key: string) => void;
   selectedModel: string;
   setSelectedModel: (model: string) => void;
-  isDemoMode: boolean;
-  setIsDemoMode: (mode: boolean) => void;
   currentUser: { username: string; isAdmin: boolean } | null;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
-  apiKey,
-  setApiKey,
   selectedModel,
   setSelectedModel,
-  isDemoMode,
-  setIsDemoMode,
   currentUser
 }) => {
-  const [keyInput, setKeyInput] = useState(apiKey);
-  const [showKey, setShowKey] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   const isAdmin = currentUser?.isAdmin ?? false;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setApiKey(keyInput);
     setSaveStatus('success');
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
-  const handleToggleDemo = () => {
-    setIsDemoMode(!isDemoMode);
-  };
+
 
   // Standard User Settings View
   if (!isAdmin) {
@@ -94,23 +81,21 @@ export const Settings: React.FC<SettingsProps> = ({
 
             <div className="glass-panel" style={{
               padding: '1.25rem',
-              borderLeft: `4px solid ${isDemoMode ? 'var(--warning)' : 'var(--success)'}`,
-              background: isDemoMode ? 'rgba(245, 158, 11, 0.03)' : 'rgba(16, 185, 129, 0.03)',
+              borderLeft: '4px solid var(--success)',
+              background: 'rgba(16, 185, 129, 0.03)',
               display: 'flex',
               gap: '0.75rem',
               alignItems: 'center'
             }}>
-              <div style={{ color: isDemoMode ? 'var(--warning)' : 'var(--success)' }}>
-                {isDemoMode ? <AlertTriangle size={20} /> : <Check size={20} />}
+              <div style={{ color: 'var(--success)' }}>
+                <Check size={20} />
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  System Mode: {isDemoMode ? 'Demo Mode (Simulated AI)' : 'Live AI Mode (Gemini Powered)'}
+                  System Mode: Live AI Mode (Gemini Powered)
                 </p>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  {isDemoMode
-                    ? 'The system is running simulated AI responses set by the administrator.'
-                    : 'The system is powered by the live Gemini AI engine configured by the administrator.'}
+                  The system is powered by the live Gemini AI engine configured by the administrator.
                 </p>
               </div>
             </div>
@@ -134,37 +119,6 @@ export const Settings: React.FC<SettingsProps> = ({
       <div className="settings-dashboard-grid">
         {/* Left Column: Config Panels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Demo Mode Toggle Panel */}
-          <div className="glass-panel" style={{
-            padding: '1.5rem',
-            borderLeft: '4px solid var(--warning)',
-            background: isDemoMode ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <AlertTriangle size={20} style={{ color: 'var(--warning)' }} />
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Quick Testing (Demo Mode)</h3>
-            </div>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Enable Demo Mode to use simulated AI responses <strong>without requiring a Gemini API key</strong>.
-            </p>
-            <div className="settings-flex-wrap" style={{ marginTop: '0.25rem' }}>
-              <button
-                type="button"
-                className={`btn ${isDemoMode ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={handleToggleDemo}
-                style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}
-              >
-                {isDemoMode ? 'Disable Demo Mode' : 'Enable Demo Mode'}
-              </button>
-              <span style={{ fontSize: '0.85rem', color: isDemoMode ? 'var(--warning)' : 'var(--text-muted)', fontWeight: 600 }}>
-                {isDemoMode ? '✓ Demo Mode ACTIVE' : '✗ Demo Mode INACTIVE'}
-              </span>
-            </div>
-          </div>
-
           {/* API Key Configuration */}
           <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
@@ -177,38 +131,16 @@ export const Settings: React.FC<SettingsProps> = ({
                 <div style={{ position: 'relative', display: 'flex', gap: '0.5rem' }}>
                   <input
                     id="apiKeyInput"
-                    type={showKey ? 'text' : 'password'}
+                    type="text"
                     className="form-input"
-                    placeholder="AIzaSy..."
-                    value={keyInput}
-                    onChange={(e) => setKeyInput(e.target.value)}
-                    style={{ paddingRight: '3rem' }}
-                    disabled={isDemoMode}
+                    value="•••••••••••••••••••••••••••• (Configured on Server)"
+                    readOnly
+                    style={{ background: 'rgba(255, 255, 255, 0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)' }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '4px'
-                    }}
-                    title={showKey ? 'Hide key' : 'Show key'}
-                  >
-                    {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
                 </div>
-                {isDemoMode && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
-                    * Disable Demo Mode to configure a live API key.
-                  </span>
-                )}
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.35rem' }}>
+                  * The API Key is securely managed by the backend Python server (<code>backend/.env</code>).
+                </span>
               </div>
 
               <div className="form-group" style={{ margin: 0 }}>
@@ -218,7 +150,6 @@ export const Settings: React.FC<SettingsProps> = ({
                   className="form-select"
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  disabled={isDemoMode}
                 >
                   <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended — Fast)</option>
                   <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Analysis)</option>
@@ -226,18 +157,16 @@ export const Settings: React.FC<SettingsProps> = ({
                 </select>
               </div>
 
-              {!isDemoMode && (
-                <div className="settings-flex-wrap" style={{ marginTop: '0.5rem' }}>
-                  <button type="submit" className="btn btn-primary">
-                    Save Configuration
-                  </button>
-                  {saveStatus === 'success' && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--success)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      <Check size={16} /> Saved Successfully
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="settings-flex-wrap" style={{ marginTop: '0.5rem' }}>
+                <button type="submit" className="btn btn-primary">
+                  Save Configuration
+                </button>
+                {saveStatus === 'success' && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--success)', fontSize: '0.9rem', fontWeight: 600 }}>
+                    <Check size={16} /> Saved Successfully
+                  </span>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -262,7 +191,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <li>Log in with any Google / Gmail account.</li>
               <li>Click the green <strong>"Get API key"</strong> button in the top-left sidebar.</li>
               <li>Select <strong>"Create API key in new project"</strong> and copy the generated key.</li>
-              <li>Paste it into the API Key field and click Save.</li>
+              <li>Paste it into the <code>backend/.env</code> file as <code>GEMINI_API_KEY</code>.</li>
             </ol>
 
             <div style={{
@@ -278,7 +207,7 @@ export const Settings: React.FC<SettingsProps> = ({
             }}>
               <ShieldAlert size={18} style={{ color: 'var(--secondary)', flexShrink: 0, marginTop: '2px' }} />
               <span>
-                <strong>Privacy:</strong> Your API key is stored only in this browser's local storage. All queries are made directly from the browser to Google Gemini API servers.
+                <strong>Privacy:</strong> Your API key is safely managed by the Python backend server. It is never exposed to the frontend client.
               </span>
             </div>
           </div>

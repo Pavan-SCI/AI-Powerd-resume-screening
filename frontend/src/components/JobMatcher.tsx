@@ -1,41 +1,32 @@
 import React, { useState, useRef } from 'react';
 import { Upload, AlertCircle, RefreshCw, FileText, ChevronDown, CheckCircle2, Award, Sparkles, BookOpen } from 'lucide-react';
 import { extractTextFromPdf } from '../utils/pdfParser';
-import { matchResumeToJob } from '../utils/geminiApi';
 import type { MatchResult } from '../utils/geminiApi';
 import { LoadingScreen } from './LoadingScreen';
+import { supabase } from '../utils/supabaseClient';
 
 interface JobMatcherProps {
-  apiKey: string;
   selectedModel: string;
-  isDemoMode: boolean;
   onAnalysisSuccess: (score: number) => void;
-  setActiveTab: (tab: string) => void;
-  currentUser: { username: string; isAdmin: boolean } | null;
 }
 
 export const JobMatcher: React.FC<JobMatcherProps> = ({
-  apiKey,
   selectedModel,
-  isDemoMode,
-  onAnalysisSuccess,
-  setActiveTab,
-  currentUser
+  onAnalysisSuccess
 }) => {
+  const [dragActive, setDragActive] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState('');
-  const [dragActive, setDragActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MatchResult | null>(null);
-  
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     strengths: true,
     missing: true,
-    skills: true,
     gaps: true,
-    tailor: true
+    skills: true,
+    suggestions: true
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +48,7 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
     }
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -74,28 +65,29 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setResumeFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.type === "application/pdf") {
+        setResumeFile(file);
+      } else {
+        setError("Only PDF files are supported currently.");
+      }
     }
   };
 
-  const triggerBrowse = () => {
+  const onButtonClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleMatch = async () => {
     setError(null);
+    setResult(null);
 
     if (!resumeFile) {
-      setError("Please select or upload a resume PDF file.");
+      setError("Please upload a resume first.");
       return;
     }
     if (!jobDescription.trim()) {
-      setError("Please copy and paste the job or internship description.");
-      return;
-    }
-    if (!isDemoMode && !apiKey) {
-      setError("Gemini API Key is missing. Please go to Settings or activate Demo Mode to test.");
+      setError("Please enter a job or internship description.");
       return;
     }
 
@@ -105,38 +97,46 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
       setLoadingStatus("Parsing resume PDF text...");
       const resumeText = await extractTextFromPdf(resumeFile);
       
-      setLoadingStatus("Aligning resume with target description...");
-      const matchResult = await matchResumeToJob(
-        resumeText, 
-        jobDescription, 
-        apiKey, 
-        selectedModel, 
-        isDemoMode
-      );
+      let matchResult: MatchResult;
+
+      setLoadingStatus("Consulting backend API...");
+      const session = (await supabase.auth.getSession()).data.session;
+      const token = session?.access_token;
+      
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/match-resume`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          job_description: jobDescription,
+          filename: resumeFile.name,
+          model: selectedModel
+        })
+      });
+        
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.detail || `API error: ${response.statusText}`);
+      }
+        
+      matchResult = await response.json();
       
       setResult(matchResult);
       onAnalysisSuccess(matchResult.match_percentage);
-
-      // Save to user's personal history in localStorage
-      if (currentUser && resumeFile) {
-        const historyKey = `user_history_${currentUser.username.toLowerCase()}`;
-        const existingStr = localStorage.getItem(historyKey) || '[]';
-        const existing = JSON.parse(existingStr);
-        existing.push({
-          id: `${Date.now()}`,
-          filename: resumeFile.name,
-          date: new Date().toISOString(),
-          score: matchResult.match_percentage,
-          type: 'match',
-          result: matchResult
-        });
-        localStorage.setItem(historyKey, JSON.stringify(existing));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred during matching.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleMatch();
   };
 
   const handleReset = () => {
@@ -172,33 +172,6 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
           </button>
         )}
       </div>
-
-      {/* API Key warning */}
-      {!apiKey && !isDemoMode && (
-        <div className="glass-panel" style={{
-          padding: '1.25rem',
-          borderLeft: '4px solid var(--danger)',
-          background: 'rgba(239, 68, 68, 0.03)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '1rem',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <AlertCircle size={22} style={{ color: 'var(--danger)' }} />
-            <div>
-              <h4 style={{ margin: 0 }}>API Key Required</h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Please enter a Gemini API Key to run job matching, or enable Demo Mode in settings.
-              </p>
-            </div>
-          </div>
-          <button className="btn btn-secondary" onClick={() => setActiveTab('settings')} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-            Go to Settings
-          </button>
-        </div>
-      )}
 
       {/* Error Banners */}
       {error && (
@@ -246,7 +219,7 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
                 onDragOver={handleDrag} 
                 onDragLeave={handleDrag} 
                 onDrop={handleDrop}
-                onClick={triggerBrowse}
+                onClick={onButtonClick}
                 style={{ padding: '2rem 1.5rem', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

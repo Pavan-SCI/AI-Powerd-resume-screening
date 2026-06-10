@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Calendar, FileText, ChevronDown, CheckCircle2, AlertCircle, BookOpen, AlertTriangle, ArrowLeft, Briefcase, Sparkles, HelpCircle } from 'lucide-react';
 import type { ScreeningResult, MatchResult } from '../utils/geminiApi';
+import { supabase } from '../utils/supabaseClient';
 
 export interface ScanRecord {
   id: string;
@@ -19,6 +20,8 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ username, isAdmin }) => {
   const [history, setHistory] = useState<ScanRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     strengths: true,
@@ -31,18 +34,45 @@ export const Profile: React.FC<ProfileProps> = ({ username, isAdmin }) => {
     tailor: true
   });
 
-  useEffect(() => {
-    // Load historical records for this specific logged-in user
-    const historyKey = `user_history_${username.toLowerCase()}`;
-    const savedHistoryStr = localStorage.getItem(historyKey) || '[]';
+  const fetchHistory = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const parsed = JSON.parse(savedHistoryStr) as ScanRecord[];
-      // Sort: newest first
-      parsed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setHistory(parsed);
+      const session = (await supabase.auth.getSession()).data.session;
+      const token = session?.access_token;
+      
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/history`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load history: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const mapped: ScanRecord[] = data.map((item: any) => ({
+        id: item.id,
+        filename: item.filename,
+        date: item.created_at,
+        score: item.score,
+        type: item.type,
+        result: item.result_data
+      }));
+      
+      setHistory(mapped);
     } catch (err) {
-      console.error('Failed to parse user history', err);
+      console.error('Failed to load history', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch scans history.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchHistory();
   }, [username]);
 
   const toggleAccordion = (section: string) => {
@@ -58,12 +88,28 @@ export const Profile: React.FC<ProfileProps> = ({ username, isAdmin }) => {
     return 'var(--danger)';
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (window.confirm('Are you sure you want to clear your entire scan history? This action is irreversible.')) {
-      const historyKey = `user_history_${username.toLowerCase()}`;
-      localStorage.setItem(historyKey, '[]');
-      setHistory([]);
-      setSelectedScan(null);
+      try {
+        const session = (await supabase.auth.getSession()).data.session;
+        const token = session?.access_token;
+        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        
+        await Promise.all(history.map(item => 
+          fetch(`${backendUrl}/api/history/${item.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        ));
+        
+        setHistory([]);
+        setSelectedScan(null);
+      } catch (err) {
+        console.error('Failed to clear history:', err);
+        alert('Some items failed to delete. Please refresh and try again.');
+      }
     }
   };
 
@@ -468,7 +514,15 @@ export const Profile: React.FC<ProfileProps> = ({ username, isAdmin }) => {
           )}
         </div>
 
-        {history.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
+            <p style={{ margin: 0 }}>Loading scan history...</p>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--danger)' }}>
+            <p style={{ margin: 0 }}>{error}</p>
+          </div>
+        ) : history.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
             <FileText size={40} style={{ margin: '0 auto 1rem', display: 'block', opacity: 0.3 }} />
             <p style={{ margin: 0, fontSize: '0.95rem' }}>No resumes screened yet under this account.</p>

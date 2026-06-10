@@ -14,7 +14,6 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  isDemoMode: boolean;
   totalAnalyzed: number;
   currentUser: { username: string; isAdmin: boolean } | null;
   onLogout: () => void;
@@ -26,7 +25,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
-  isDemoMode,
   totalAnalyzed,
   currentUser,
   onLogout,
@@ -266,11 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}>
                   {currentUser ? currentUser.username.toUpperCase() : 'USER'}
                 </span>
-                {isDemoMode ? (
-                  <span className="badge badge-warning" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>DEMO</span>
-                ) : (
-                  <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>LIVE</span>
-                )}
+                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>LIVE</span>
               </div>
               
               <div style={{ height: '1px', background: 'var(--border-color)' }} />
