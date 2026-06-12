@@ -30,6 +30,7 @@ You MUST respond ONLY with a JSON object. Ensure the JSON conforms exactly to th
 {{
   "overall_score": <number from 0 to 100 representing resume strength>,
   "summary": "<a short 2-3 sentence overview of the candidate profile>",
+  "identified_skills": ["<key skill found in resume 1>", "<key skill found in resume 2>", ...],
   "strengths": ["<strength 1>", "<strength 2>", ...],
   "weaknesses": ["<weakness 1>", "<weakness 2>", ...],
   "missing_skills": [
@@ -42,7 +43,17 @@ You MUST respond ONLY with a JSON object. Ensure the JSON conforms exactly to th
     {{ "title": "<real or highly relevant course name to fill missing skills>", "platform": "<Udemy | Coursera | LinkedIn Learning etc>", "link": "<a simple platform search query url or typical learning platform url>" }}
   ],
   "gaps": ["<gaps such as career gaps, missing education details, lack of certification details, etc.>"],
-  "formatting_feedback": "<constructive feedback about fonts, contact details, layout structure, etc.>"
+  "formatting_feedback": "<constructive feedback about fonts, contact details, layout structure, etc.>",
+  "career_path_gaps": {{
+    "current_role": "<candidate's current or most recent job title from CV, e.g. Software Developer>",
+    "intermediate_role": "<suggested intermediate next-step title, e.g. Career Architect>",
+    "target_role": "<suggested long-term target role title, e.g. Cloud Architect>",
+    "gaps": [
+      {{ "type": "skill", "title": "Skill Gap: NoSQL", "details": "No references to non-relational database management systems (NoSQL) found in work history." }},
+      {{ "type": "skill", "title": "Still Gap: SQL", "details": "Minimal advanced query optimization or SQL schema scaling details found on the CV." }},
+      {{ "type": "experience", "title": "Experience Gap", "details": "Lacks required experience managing cloud systems architectures or DevOps CI/CD." }}
+    ]
+  }}
 }}
 
 Do not include any Markdown wrap (like ```json) or text before or after the JSON.
