@@ -526,11 +526,11 @@ export const Screener: React.FC<ScreenerProps> = ({
                   <BookOpen size={20} style={{ color: 'var(--primary)' }} /> Suggested E-Learning Resources
                 </h4>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  Use all online platform paths to bridge gaps using three recommended resources.
+                  Use all online platform paths to bridge gaps using recommended resources.
                 </p>
 
                 <div className="elearning-grid-visual">
-                  {result.courses.slice(0, 3).map((course, idx) => {
+                  {result.courses.map((course, idx) => {
                     const platformLower = course.platform.toLowerCase();
                     const isCoursera = platformLower.includes('coursera');
                     const isUdemy = platformLower.includes('udemy');
