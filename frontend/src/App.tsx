@@ -6,6 +6,7 @@ import { JobMatcher } from './components/JobMatcher';
 import { Settings } from './components/Settings';
 import { Profile } from './components/Profile';
 import { Auth } from './components/Auth';
+import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { Menu } from 'lucide-react';
 
 import { supabase } from './utils/supabaseClient';
@@ -15,12 +16,16 @@ interface CurrentUser {
   isAdmin: boolean;
 }
 
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'pavanwish2002@gmail.com').toLowerCase();
+
 function App() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   const [userScanCount, setUserScanCount] = useState<number>(0);
   const [userAvgScore, setUserAvgScore] = useState<number>(0);
+  const [scanHistory, setScanHistory] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(
     typeof window !== 'undefined' ? window.innerWidth > 1024 : true
   );
@@ -35,7 +40,10 @@ function App() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveringPassword(true);
+      }
       if (session?.user) {
         await fetchUserProfile(session.user.id, session.user.email);
         loadUserStats(session.access_token);
@@ -43,12 +51,19 @@ function App() {
         setCurrentUser(null);
         setUserScanCount(0);
         setUserAvgScore(0);
+        setScanHistory([]);
       }
     });
 
     const savedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
-
     setSelectedModel(savedModel);
+
+    // Apply saved layout theme
+    const savedTheme = localStorage.getItem('resumecraft_theme') || 'glass-dark';
+    document.body.className = '';
+    if (savedTheme !== 'glass-dark') {
+      document.body.classList.add(`theme-${savedTheme}`);
+    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -56,7 +71,7 @@ function App() {
   const fetchUserProfile = async (userId: string, email?: string) => {
     try {
       const { data } = await supabase.from('profiles').select('username').eq('id', userId).single();
-      const isAdmin = email?.toLowerCase() === 'admin@resumecraft.local';
+      const isAdmin = email?.toLowerCase() === ADMIN_EMAIL;
       setCurrentUser({ username: data?.username || email?.split('@')[0] || 'User', isAdmin });
     } catch {
       setCurrentUser({ username: email?.split('@')[0] || 'User', isAdmin: false });
@@ -71,6 +86,7 @@ function App() {
       });
       if (response.ok) {
         const history = await response.json();
+        setScanHistory(history);
         setUserScanCount(history.length);
         if (history.length > 0) {
           const avg = Math.round(history.reduce((sum: number, item: any) => sum + item.score, 0) / history.length);
@@ -80,6 +96,7 @@ function App() {
         }
       }
     } catch {
+      setScanHistory([]);
       setUserScanCount(0);
       setUserAvgScore(0);
     }
@@ -118,6 +135,8 @@ function App() {
             totalAnalyzed={userScanCount}
             averageScore={userAvgScore}
             selectedModel={selectedModel}
+            scanHistory={scanHistory}
+            isAdmin={currentUser?.isAdmin ?? false}
           />
         );
       case 'screener':
@@ -219,6 +238,11 @@ function App() {
       <main className="main-content" style={{ zIndex: 1 }}>
         {renderActiveView()}
       </main>
+
+      {/* Password Reset Modal Overlay */}
+      {isRecoveringPassword && (
+        <ResetPasswordModal onClose={() => setIsRecoveringPassword(false)} />
+      )}
     </div>
   );
 }
