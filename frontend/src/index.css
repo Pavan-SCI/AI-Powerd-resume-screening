@@ -1789,4 +1789,265 @@ h1 {
   }
 }
 
+/* Dashboard Premium Micro-Animations */
+.activity-item-visual:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ==========================================================================
+   Page Density & Aesthetics Upgrades (Dashboard, Profile, Settings)
+   ========================================================================== */
+
+/* Diagnostics & Quota Visuals */
+.diagnostics-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.diagnostics-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: all 0.6s ease;
+}
+
+.diagnostics-btn:hover::after {
+  left: 100%;
+}
+
+.diagnostic-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: diag-pulse-glow 1.5s infinite ease-in-out;
+}
+
+@keyframes diag-pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 8px rgba(139, 92, 246, 0.8); }
+}
+
+/* Console terminal mockup */
+.console-terminal {
+  font-family: var(--font-mono);
+  background: #050308;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: #a78bfa;
+  min-height: 120px;
+  max-height: 160px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.console-line {
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.console-line-success {
+  color: #10b981;
+}
+
+.console-line-warning {
+  color: #f59e0b;
+}
+
+.console-line-info {
+  color: #3b82f6;
+}
+
+/* SVG Radar & Trend Chart Stylings */
+.svg-chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Theme Customizer */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .theme-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.theme-swatch {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.01);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.theme-swatch:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.theme-swatch.active {
+  border-color: var(--primary);
+  background: rgba(139, 92, 246, 0.05);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+}
+
+.theme-preview-circles {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.theme-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Gamified Milestone Checklist */
+.milestone-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.milestone-row:last-child {
+  border-bottom: none;
+}
+
+.milestone-row:hover {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.milestone-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.milestone-checkbox.completed {
+  border-color: var(--success);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.milestone-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.milestone-title.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.milestone-xp {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(236, 72, 153, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Active Theme Variable Overrides on body */
+body.theme-violet {
+  --bg-darker: #090514;
+  --bg-dark: #0f0a21;
+  --bg-card: #1b113a;
+  --bg-card-hover: #261852;
+  --primary: #a78bfa;
+  --border-color: rgba(167, 139, 250, 0.12);
+  --border-glow: rgba(167, 139, 250, 0.2);
+}
+
+body.theme-neon {
+  --bg-darker: #06000c;
+  --bg-dark: #0f001b;
+  --bg-card: #1c002f;
+  --bg-card-hover: #2d004b;
+  --primary: #ec4899;
+  --secondary: #06b6d4;
+  --accent: #f43f5e;
+  --border-color: rgba(236, 72, 153, 0.15);
+  --border-glow: rgba(236, 72, 153, 0.25);
+}
+
+body.theme-classic {
+  --bg-darker: #0f172a;
+  --bg-dark: #1e293b;
+  --bg-card: #334155;
+  --bg-card-hover: #475569;
+  --primary: #3b82f6;
+  --secondary: #10b981;
+  --accent: #6366f1;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(59, 130, 246, 0.2);
+}
+
+
+
 

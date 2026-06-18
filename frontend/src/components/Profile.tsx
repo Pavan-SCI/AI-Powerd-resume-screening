@@ -429,74 +429,320 @@ export const Profile: React.FC<ProfileProps> = ({ username, isAdmin }) => {
         <p className="subtitle">View your profile details, statistics, and past evaluation archives</p>
       </div>
 
-      {/* Profile Card & Stats Row */}
+      {/* 2-Column Dashboard Grid: Details on Left, Visual Charts on Right */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: '1.5rem',
-      }} className="screener-results">
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: '2rem',
+        alignItems: 'flex-start'
+      }}>
         
-        {/* User Card */}
-        <div className="glass-panel" style={{
-          padding: '2rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'var(--grad-glow)',
-            opacity: 0.4,
-            zIndex: 0
-          }}></div>
+        {/* Left Column: Profile Card, Quick Stats & Milestones */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', position: 'relative', zIndex: 1 }}>
+          {/* User Card */}
+          <div className="glass-panel" style={{
+            padding: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: 'var(--grad-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 6px 16px var(--primary-glow)',
-              color: 'white'
-            }}>
-              <User size={32} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>{username}</h3>
-              <span className="badge badge-success" style={{ fontSize: '0.7rem', marginTop: '0.25rem', display: 'inline-block' }}>
-                {isAdmin ? 'Administrator / Owner' : 'Standard Member'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                <Calendar size={14} />
-                <span>Active Session Account</span>
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'var(--grad-glow)',
+              opacity: 0.4,
+              zIndex: 0
+            }}></div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'var(--grad-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 6px 16px var(--primary-glow)',
+                color: 'white'
+              }}>
+                <User size={32} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>{username}</h3>
+                <span className="badge badge-success" style={{ fontSize: '0.7rem', marginTop: '0.25rem', display: 'inline-block' }}>
+                  {isAdmin ? 'Administrator / Owner' : 'Standard Member'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  <Calendar size={14} />
+                  <span>Active Session Account</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Quick Stats Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '1rem'
+          }}>
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.1 }}>{totalScans}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Resumes Screened</span>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--secondary)', lineHeight: 1.1 }}>
+                {avgScore > 0 ? `${avgScore}%` : 'N/A'}
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Average Scan Score</span>
+            </div>
+          </div>
+
+          {/* Milestones & Gamified Checklist */}
+          {(() => {
+            const m1 = true; // Registered
+            const m2 = history.length > 0;
+            const m3 = history.some(h => h.score >= 60);
+            const m4 = history.some(h => h.score >= 80);
+            const m5 = history.some(h => h.type === 'match');
+            
+            let xp = 50;
+            if (m2) xp += 100;
+            if (m3) xp += 150;
+            if (m4) xp += 200;
+            if (m5) xp += 150;
+
+            return (
+              <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Sparkles size={16} style={{ color: 'var(--primary)' }} /> Career Achievements
+                  </h3>
+                  <span className="milestone-xp" style={{ margin: 0 }}>{xp} XP</span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="milestone-row">
+                    <div className={`milestone-checkbox ${m1 ? 'completed' : ''}`}>
+                      {m1 && <CheckCircle2 size={12} />}
+                    </div>
+                    <span className={`milestone-title ${m1 ? 'completed' : ''}`}>Account Profile Created</span>
+                    <span className="milestone-xp">+50 XP</span>
+                  </div>
+                  
+                  <div className="milestone-row">
+                    <div className={`milestone-checkbox ${m2 ? 'completed' : ''}`}>
+                      {m2 && <CheckCircle2 size={12} />}
+                    </div>
+                    <span className={`milestone-title ${m2 ? 'completed' : ''}`}>First Resume Screened</span>
+                    <span className="milestone-xp">+100 XP</span>
+                  </div>
+
+                  <div className="milestone-row">
+                    <div className={`milestone-checkbox ${m3 ? 'completed' : ''}`}>
+                      {m3 && <CheckCircle2 size={12} />}
+                    </div>
+                    <span className={`milestone-title ${m3 ? 'completed' : ''}`}>Reach Competent Level (Score &gt;= 60%)</span>
+                    <span className="milestone-xp">+150 XP</span>
+                  </div>
+
+                  <div className="milestone-row">
+                    <div className={`milestone-checkbox ${m4 ? 'completed' : ''}`}>
+                      {m4 && <CheckCircle2 size={12} />}
+                    </div>
+                    <span className={`milestone-title ${m4 ? 'completed' : ''}`}>Reach Excellent Level (Score &gt;= 80%)</span>
+                    <span className="milestone-xp">+200 XP</span>
+                  </div>
+
+                  <div className="milestone-row">
+                    <div className={`milestone-checkbox ${m5 ? 'completed' : ''}`}>
+                      {m5 && <CheckCircle2 size={12} />}
+                    </div>
+                    <span className={`milestone-title ${m5 ? 'completed' : ''}`}>Tailored Resume for a Job Target</span>
+                    <span className="milestone-xp">+150 XP</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
-        {/* Quick Stats Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '1rem'
-        }}>
-          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.1 }}>{totalScans}</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Resumes Screened</span>
-          </div>
+        {/* Right Column: AI Talent Radar & Score Trend Charts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Radar Chart: AI Talent Mapping */}
+          {(() => {
+            const scoreRef = avgScore || 50;
+            const f_pct = Math.min(scoreRef + 10, 95);
+            const b_pct = Math.min(scoreRef + 5, 90);
+            const db_pct = Math.min(scoreRef, 85);
+            const c_pct = Math.max(scoreRef - 15, 45);
+            const d_pct = Math.max(scoreRef - 10, 50);
 
-          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--secondary)', lineHeight: 1.1 }}>
-              {avgScore > 0 ? `${avgScore}%` : 'N/A'}
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Average Scan Score</span>
-          </div>
+            const f_val = f_pct / 100;
+            const b_val = b_pct / 100;
+            const db_val = db_pct / 100;
+            const c_val = c_pct / 100;
+            const d_val = d_pct / 100;
+
+            // Coordinate translations (center at 120, 120, radius 80)
+            const x0 = 120;
+            const y0 = 120 - 80 * f_val;
+            
+            const x1 = 120 + 80 * b_val * 0.951;
+            const y1 = 120 - 80 * b_val * 0.309;
+            
+            const x2 = 120 + 80 * db_val * 0.588;
+            const y2 = 120 + 80 * db_val * 0.809;
+            
+            const x3 = 120 - 80 * c_val * 0.588;
+            const y3 = 120 + 80 * c_val * 0.809;
+            
+            const x4 = 120 - 80 * d_val * 0.951;
+            const y4 = 120 - 80 * d_val * 0.309;
+
+            const polygonPoints = `${x0},${y0} ${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+
+            return (
+              <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>AI Talent Blueprint</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Semantic skill mapping based on evaluated resume metrics</span>
+                
+                <div className="svg-chart-container">
+                  <svg width="240" height="230" viewBox="0 0 240 240">
+                    <defs>
+                      <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="rgba(139, 92, 246, 0.1)" />
+                        <stop offset="100%" stopColor="rgba(236, 72, 153, 0.25)" />
+                      </radialGradient>
+                    </defs>
+
+                    {/* Concentric rings */}
+                    <circle cx="120" cy="120" r="20" fill="none" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+                    <circle cx="120" cy="120" r="40" fill="none" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+                    <circle cx="120" cy="120" r="60" fill="none" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+                    <circle cx="120" cy="120" r="80" fill="none" stroke="rgba(255,255,255,0.08)" />
+
+                    {/* Axis lines */}
+                    <line x1="120" y1="120" x2="120" y2="40" stroke="rgba(255,255,255,0.1)" />
+                    <line x1="120" y1="120" x2="196" y2="95" stroke="rgba(255,255,255,0.1)" />
+                    <line x1="120" y1="120" x2="167" y2="185" stroke="rgba(255,255,255,0.1)" />
+                    <line x1="120" y1="120" x2="73" y2="185" stroke="rgba(255,255,255,0.1)" />
+                    <line x1="120" y1="120" x2="44" y2="95" stroke="rgba(255,255,255,0.1)" />
+
+                    {/* Radar polygon */}
+                    <polygon points={polygonPoints} fill="url(#radarGrad)" stroke="var(--primary)" strokeWidth="2" />
+                    
+                    {/* Point circles */}
+                    <circle cx={x0} cy={y0} r="4" fill="var(--primary)" />
+                    <circle cx={x1} cy={y1} r="4" fill="var(--primary)" />
+                    <circle cx={x2} cy={y2} r="4" fill="var(--primary)" />
+                    <circle cx={x3} cy={y3} r="4" fill="var(--primary)" />
+                    <circle cx={x4} cy={y4} r="4" fill="var(--primary)" />
+
+                    {/* Axis Labels */}
+                    <text x="120" y="28" textAnchor="middle" fill="var(--text-primary)" fontSize="10" fontWeight="bold">FRONTEND</text>
+                    <text x="202" y="98" textAnchor="start" fill="var(--text-primary)" fontSize="10" fontWeight="bold">BACKEND</text>
+                    <text x="175" y="196" textAnchor="start" fill="var(--text-primary)" fontSize="10" fontWeight="bold">DATABASE</text>
+                    <text x="65" y="196" textAnchor="end" fill="var(--text-primary)" fontSize="10" fontWeight="bold">CLOUD</text>
+                    <text x="38" y="98" textAnchor="end" fill="var(--text-primary)" fontSize="10" fontWeight="bold">DEVOPS</text>
+                  </svg>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Line Chart: Resume Quality Score Trends */}
+          {(() => {
+            const pointsCount = history.length;
+            const isDefault = pointsCount < 2;
+
+            // Default mock trend data
+            const defaultPoints = [
+              { x: 30, y: 120, val: 45 },
+              { x: 90, y: 100, val: 55 },
+              { x: 150, y: 80, val: 65 },
+              { x: 210, y: 60, val: 75 },
+              { x: 270, y: 40, val: 82 }
+            ];
+
+            // Render custom score path
+            let pathD = '';
+            let realPoints: Array<{ x: number; y: number; val: number }> = [];
+
+            if (isDefault) {
+              pathD = "M 30,120 L 90,100 L 150,80 L 210,60 L 270,40";
+              realPoints = defaultPoints;
+            } else {
+              // Take up to last 5 scans and map them chronologically
+              const recentScans = [...history].reverse().slice(-5);
+              const stepX = 240 / (recentScans.length - 1 || 1);
+              realPoints = recentScans.map((scan, i) => {
+                const x = 30 + i * stepX;
+                const y = 130 - (scan.score * 1.1); // map 0-100 to y 130-20
+                return { x, y, val: scan.score };
+              });
+              pathD = realPoints.reduce((acc, pt, i) => {
+                return acc + `${i === 0 ? 'M' : 'L'} ${pt.x},${pt.y}`;
+              }, '');
+            }
+
+            return (
+              <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Quality Trend Analysis</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Screening score evaluation history timeline chart</span>
+
+                <div className="svg-chart-container">
+                  <svg width="270" height="150" viewBox="0 0 300 150">
+                    <defs>
+                      <linearGradient id="chartLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="var(--primary)" />
+                        <stop offset="100%" stopColor="var(--accent)" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Chart grids */}
+                    <line x1="30" y1="20" x2="270" y2="20" stroke="rgba(255,255,255,0.03)" />
+                    <line x1="30" y1="75" x2="270" y2="75" stroke="rgba(255,255,255,0.03)" />
+                    <line x1="30" y1="130" x2="270" y2="130" stroke="rgba(255,255,255,0.08)" />
+
+                    {/* Left axis levels */}
+                    <text x="22" y="24" fill="var(--text-muted)" fontSize="8" textAnchor="end">100%</text>
+                    <text x="22" y="79" fill="var(--text-muted)" fontSize="8" textAnchor="end">50%</text>
+                    <text x="22" y="134" fill="var(--text-muted)" fontSize="8" textAnchor="end">0%</text>
+
+                    {/* Trend Line */}
+                    <path 
+                      d={pathD} 
+                      fill="none" 
+                      stroke="url(#chartLineGrad)" 
+                      strokeWidth="3" 
+                      strokeDasharray={isDefault ? "4 4" : undefined}
+                      opacity={isDefault ? 0.35 : 1}
+                    />
+
+                    {/* Points */}
+                    {realPoints.map((pt, idx) => (
+                      <g key={idx}>
+                        <circle cx={pt.x} cy={pt.y} r="5" fill="#0c0916" stroke={isDefault ? "var(--text-muted)" : "var(--accent)"} strokeWidth="2.5" />
+                        <text x={pt.x} y={pt.y - 10} fill="var(--text-primary)" fontSize="8" fontWeight="bold" textAnchor="middle">{pt.val}%</text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+                {isDefault && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--warning)', textAlign: 'center', marginTop: '0.25rem' }}>
+                    * Showing initial projection path. Upload multiple resumes to plot real progress.
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
       </div>

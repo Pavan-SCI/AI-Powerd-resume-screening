@@ -193,80 +193,121 @@ export const JobMatcher: React.FC<JobMatcherProps> = ({
 
       {/* Input Form Screen */}
       {!result && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr',
-            gap: '2rem'
-          }} className="screener-results">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             
-            {/* Left side: CV PDF drag zone */}
-            <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>1. Provide Resume PDF</h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr',
+              gap: '2rem'
+            }} className="screener-results">
               
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                style={{ display: 'none' }} 
-                accept=".pdf"
-                onChange={handleFileChange}
-              />
-              
-              <div 
-                className={`dropzone ${dragActive ? 'dropzone-active' : ''}`}
-                onDragEnter={handleDrag} 
-                onDragOver={handleDrag} 
-                onDragLeave={handleDrag} 
-                onDrop={handleDrop}
-                onClick={onButtonClick}
-                style={{ padding: '2rem 1.5rem', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div className="dropzone-icon" style={{ marginBottom: '0.75rem' }}>
-                    <Upload size={36} />
-                  </div>
-                  {resumeFile ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
-                      <FileText size={18} />
-                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{resumeFile.name}</span>
+              {/* Left side: CV PDF drag zone */}
+              <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>1. Provide Resume PDF</h3>
+                
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  style={{ display: 'none' }} 
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                />
+                
+                <div 
+                  className={`dropzone ${dragActive ? 'dropzone-active' : ''}`}
+                  onDragEnter={handleDrag} 
+                  onDragOver={handleDrag} 
+                  onDragLeave={handleDrag} 
+                  onDrop={handleDrop}
+                  onClick={onButtonClick}
+                  style={{ padding: '2rem 1.5rem', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className="dropzone-icon" style={{ marginBottom: '0.75rem' }}>
+                      <Upload size={36} />
                     </div>
-                  ) : (
-                    <>
-                      <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>
-                        {dragActive ? "Drop PDF file here" : "Upload your CV (PDF)"}
-                      </h4>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Drag here or browse
-                      </p>
-                    </>
-                  )}
+                    {resumeFile ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
+                        <FileText size={18} />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{resumeFile.name}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>
+                          {dragActive ? "Drop PDF file here" : "Upload your CV (PDF)"}
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          Drag here or browse
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Right side: Paste Job Description */}
+              <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Target Job / Internship Description</h3>
+                <div className="form-group" style={{ margin: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Paste the job requirements, responsibilities, and target skills description here..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    style={{ flexGrow: 1, minHeight: '180px' }}
+                  />
+                </div>
+              </div>
+
             </div>
 
-            {/* Right side: Paste Job Description */}
-            <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Target Job / Internship Description</h3>
-              <div className="form-group" style={{ margin: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Paste the job requirements, responsibilities, and target skills description here..."
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  style={{ flexGrow: 1, minHeight: '180px' }}
-                />
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button type="submit" className="btn btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.05rem' }}>
+                <Sparkles size={20} /> Compare & Match Resume
+              </button>
+            </div>
+          </form>
+
+          {/* Semantic Matching Explainer */}
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '-0.02em' }}>
+              <CheckCircle2 size={20} style={{ color: 'var(--primary)' }} /> Semantic Matching Core Engine
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 1.5rem 0' }}>
+              The Job Target Matcher uses advanced natural language processing via Gemini AI to perform deep comparative mapping of your resume against the target description:
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }}></span> Keyword Extraction
+                </span>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Identifies primary software tools, hard and soft skills, methodologies, and credential keywords required by the employer.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--secondary)', display: 'inline-block' }}></span> Experience Alignment
+                </span>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Calculates years of experience overlap and matches responsibility domains between past positions and new roles.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }}></span> Bullet Tailoring
+                </span>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  Generates precise phrasing recommendations using before-and-after copy structures to boost search compatibility scores.
+                </p>
               </div>
             </div>
-
           </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <button type="submit" className="btn btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.05rem' }}>
-              <Sparkles size={20} /> Compare & Match Resume
-            </button>
-          </div>
-        </form>
+        </div>
       )}
 
       {/* Matching Results View */}

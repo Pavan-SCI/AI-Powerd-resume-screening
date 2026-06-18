@@ -20,6 +20,7 @@ export const Screener: React.FC<ScreenerProps> = ({
   const [loadingStatus, setLoadingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScreeningResult | null>(null);
+  const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({});
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     strengths: true,
     weaknesses: true,
@@ -28,6 +29,10 @@ export const Screener: React.FC<ScreenerProps> = ({
     gaps: true,
     formatting: false
   });
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqs(prev => ({ ...prev, [index]: !prev[index] }));
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -223,45 +228,144 @@ export const Screener: React.FC<ScreenerProps> = ({
 
       {/* Upload Screen */}
       {!result && (
-        <div className="glass-panel" style={{ padding: '3rem 2rem' }}>
-          <form 
-            onDragEnter={handleDrag} 
-            onDragOver={handleDrag} 
-            onDragLeave={handleDrag} 
-            onDrop={handleDrop}
-            onSubmit={(e) => e.preventDefault()}
-          >
-            <input 
-              ref={fileInputRef}
-              type="file" 
-              style={{ display: 'none' }} 
-              accept=".pdf"
-              onChange={handleFileChange}
-            />
-
-            <div 
-              className={`dropzone ${dragActive ? 'dropzone-active' : ''}`}
-              onClick={onButtonClick}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
+          <div className="glass-panel" style={{ padding: '3rem 2rem' }}>
+            <form 
+              onDragEnter={handleDrag} 
+              onDragOver={handleDrag} 
+              onDragLeave={handleDrag} 
+              onDrop={handleDrop}
+              onSubmit={(e) => e.preventDefault()}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div className="dropzone-icon">
-                  <Upload size={48} />
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                style={{ display: 'none' }} 
+                accept=".pdf"
+                onChange={handleFileChange}
+              />
+
+              <div 
+                className={`dropzone ${dragActive ? 'dropzone-active' : ''}`}
+                onClick={onButtonClick}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div className="dropzone-icon">
+                    <Upload size={48} />
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                    {dragActive ? "Drop your PDF file here" : "Drag and drop your resume (PDF)"}
+                  </h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                    Or click to browse your local files
+                  </p>
+                  <button type="button" className="btn btn-primary" style={{ pointerEvents: 'none' }}>
+                    Choose Resume PDF
+                  </button>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+                    Only PDF formats are parsed. Max size 10MB.
+                  </span>
                 </div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
-                  {dragActive ? "Drop your PDF file here" : "Drag and drop your resume (PDF)"}
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                  Or click to browse your local files
+              </div>
+            </form>
+          </div>
+
+          {/* ATS Compliance Checklist */}
+          <div className="glass-panel" style={{ padding: '2.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '-0.02em' }}>
+              <CheckCircle2 size={22} style={{ color: 'var(--primary)' }} /> ATS Formatting Compliance Guide
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-color)', borderRadius: '1rem', padding: '1.5rem', display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                <span className="badge badge-success" style={{ alignSelf: 'flex-start', fontSize: '0.7rem' }}>FORMATTING</span>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Clean Text & Formats</h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  Use simple single-column layouts and standard fonts like Arial or Calibri. Avoid embedding text inside tables, images, or custom vectors as ATS parsers will skip them.
                 </p>
-                <button type="button" className="btn btn-primary" style={{ pointerEvents: 'none' }}>
-                  Choose Resume PDF
-                </button>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-                  Only PDF formats are parsed. Max size 10MB.
-                </span>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-color)', borderRadius: '1rem', padding: '1.5rem', display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                <span className="badge badge-warning" style={{ alignSelf: 'flex-start', fontSize: '0.7rem' }}>KEYWORDS</span>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Industry Keyword Density</h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  ATS scanners rank applicants based on semantic match to the job description. Include target skills, tools, and technical keywords inside your work summary organically.
+                </p>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-color)', borderRadius: '1rem', padding: '1.5rem', display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                <span className="badge badge-success" style={{ alignSelf: 'flex-start', fontSize: '0.7rem' }}>METRICS</span>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>STAR Bullet Points</h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  Describe your achievements with concrete metrics. State the Situation/Task, the Action you took, and the quantifiable Result (e.g. "reduced load time by 45%").
+                </p>
               </div>
             </div>
-          </form>
+          </div>
+
+          {/* F.A.Q. Section */}
+          <div className="glass-panel" style={{ padding: '2.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '-0.02em' }}>
+              <HelpCircle size={22} style={{ color: 'var(--secondary)' }} /> Frequently Asked Questions
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {[
+                {
+                  q: "How does the Resume Screener calculate the score?",
+                  a: "The score is computed strictly using an objective, factual grading system in the backend: Experience years (max 50 points), valid listed skills (max 30 points), and college degrees/certifications (max 20 points). Caching is fully disabled, ensuring a fresh analysis on every upload."
+                },
+                {
+                  q: "Is my uploaded resume data secure?",
+                  a: "Yes. All processing is carried out in-memory on our secure FastAPI python server. No copy of your resume text is logged or stored, and all connection endpoints use secure HTTPS protocols."
+                },
+                {
+                  q: "What is the difference between Screener and Matcher?",
+                  a: "The Screener evaluates your CV's overall compliance and quality generally. The Job Matcher evaluates how closely your resume aligns with a specific, target job/internship description."
+                }
+              ].map((faq, index) => {
+                const isOpen = !!openFaqs[index];
+                return (
+                  <div 
+                    key={index}
+                    style={{
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '0.75rem',
+                      overflow: 'hidden',
+                      background: 'rgba(255, 255, 255, 0.01)'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(index)}
+                      style={{
+                        width: '100%',
+                        padding: '1.25rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <span>{faq.q}</span>
+                      <ChevronDown size={18} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-muted)' }} />
+                    </button>
+                    {isOpen && (
+                      <div style={{ padding: '0 1.25rem 1.25rem 1.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, borderTop: '1px solid rgba(255,255,255,0.02)', paddingTop: '1rem' }}>
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

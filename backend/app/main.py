@@ -9,9 +9,12 @@ from app.services.supabase_service import (
     save_scan_history,
     get_user_scan_history,
     delete_user_scan_record,
-    save_user_profile
+    save_user_profile,
+    get_user_email_from_token
 )
 from app.services.gemini_service import screen_resume_ai, match_resume_to_job_ai
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "pavanwish2002@gmail.com").lower()
 
 app = FastAPI(
     title="ResumeCraft AI Backend",
@@ -44,6 +47,21 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> str:
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 
+def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is required.")
+    
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authorization header format. Must be Bearer <token>")
+    
+    token = parts[1]
+    try:
+        email = get_user_email_from_token(token)
+        return email
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
 # Request Schemas
 class ScreenResumeRequest(BaseModel):
     resume_text: str
@@ -59,6 +77,9 @@ class MatchJobRequest(BaseModel):
 class ProfileUpsertRequest(BaseModel):
     username: str
 
+class UpdateApiKeyRequest(BaseModel):
+    gemini_api_key: str
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to ResumeCraft AI Backend API", "status": "online"}
@@ -70,6 +91,63 @@ def upsert_profile(req: ProfileUpsertRequest, user_id: str = Depends(get_current
         return {"success": True, "profile": profile}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/config")
+def get_admin_config(email: str = Depends(get_current_user_email)):
+    if email.lower() != ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+    
+    key = os.getenv("GEMINI_API_KEY", "")
+    masked_key = ""
+    if key:
+        if len(key) > 8:
+            masked_key = key[:4] + "••••" + key[-4:]
+        else:
+            masked_key = "••••••••"
+    return {"gemini_api_key": masked_key}
+
+@app.post("/api/admin/config")
+def update_admin_config(req: UpdateApiKeyRequest, email: str = Depends(get_current_user_email)):
+    if email.lower() != ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Forbidden: Admin access required.")
+    
+    new_key = req.gemini_api_key.strip()
+    if not new_key:
+        raise HTTPException(status_code=400, detail="Gemini API Key cannot be empty.")
+    
+    # 1. Update in-memory config
+    os.environ["GEMINI_API_KEY"] = new_key
+    import google.generativeai as genai
+    genai.configure(api_key=new_key)
+    
+    # 2. Write persistently to .env file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(current_dir, "..", ".env")
+    
+    try:
+        lines = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        
+        new_lines = []
+        key_found = False
+        for line in lines:
+            if line.strip().startswith("GEMINI_API_KEY="):
+                new_lines.append(f"GEMINI_API_KEY={new_key}\n")
+                key_found = True
+            else:
+                new_lines.append(line)
+        
+        if not key_found:
+            new_lines.append(f"GEMINI_API_KEY={new_key}\n")
+            
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+            
+        return {"success": True, "message": "Gemini API key updated successfully on the server."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update config: {str(e)}")
 
 @app.post("/api/screen-resume")
 def screen_resume_endpoint(req: ScreenResumeRequest, user_id: str = Depends(get_current_user_id)):

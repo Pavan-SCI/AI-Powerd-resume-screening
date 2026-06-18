@@ -104,3 +104,18 @@ def save_user_profile(user_id: str, username: str) -> dict:
         return {}
     except Exception as e:
         raise RuntimeError(f"Failed to upsert profile: {str(e)}")
+
+def get_user_email_from_token(token: str) -> str:
+    """
+    Verifies the Supabase JWT token and returns the user's email.
+    """
+    if not supabase:
+        raise ValueError("Supabase is not configured on the server.")
+    
+    try:
+        res = supabase.auth.get_user(token)
+        if res and res.user:
+            return res.user.email
+        raise ValueError("Could not resolve user email from token.")
+    except Exception as e:
+        raise ValueError(f"Authentication failed: {str(e)}")
