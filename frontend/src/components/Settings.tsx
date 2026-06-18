@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, ShieldAlert, Check, HelpCircle, User, Shield, Lock, Bell, Terminal, RefreshCw, AlertTriangle, Monitor, Globe } from 'lucide-react';
+import { Key, Check, HelpCircle, User, Lock, Bell, Terminal, AlertTriangle, Monitor, Globe } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 interface SettingsProps {
